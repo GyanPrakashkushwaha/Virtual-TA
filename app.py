@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 DB_PATH = "knowledge_base.db"
-SIMILARITY_THRESHOLD = 0.68  # Lowered threshold for better recall
+SIMILARITY_THRESHOLD = 0.45  # Lowered threshold for better recall
 MAX_RESULTS = 10  # Increased to get more context
 load_dotenv()
 MAX_CONTEXT_CHUNKS = 4  # Increased number of chunks per source
@@ -395,7 +395,7 @@ async def generate_answer(question, relevant_results, max_retries=2):
         raise HTTPException(status_code=500, detail=error_msg)
     
     retries = 0
-    while retries < max_retries:    
+    while retries < max_retries:
         try:
             logger.info(f"Generating answer for question: '{question[:50]}...'")
             context = ""
@@ -432,12 +432,12 @@ async def generate_answer(question, relevant_results, max_retries=2):
                 "Content-Type": "application/json"
             }
             payload = {
-                "model": "gpt-4o-mini",
+                "model": os.getenv("MODEL_NAME", "gpt-4o-mini"),  # Configurable via environment
                 "messages": [
-                    {"role": "system", "content": "You are a helpful assistant that provides accurate answers based only on the provided context. Always include sources in your response with exact URLs."},
+                    {"role": "system", "content": system_message},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.3  # Lower temperature for more deterministic outputs
+                "temperature": 0.3
             }
             
             async with aiohttp.ClientSession() as session:
@@ -725,4 +725,4 @@ async def health_check():
         )
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
